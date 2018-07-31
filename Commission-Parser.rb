@@ -4,13 +4,14 @@ require 'rubyXL'
 require 'selenium-webdriver'
 
 
-USER_EMAIL='tory@millcreekagency.com'
+USER_EMAIL='dean@millcreekagency.com'
 
 class CommissionParser
 
-  
   def initialize
-    workbook = RubyXL::Parser.parse("MILL CREEK (10).xlsx")
+    puts "Enter filepath: "
+    filepath = gets.chomp.trim
+    workbook = RubyXL::Parser.parse(filepath)
     @worksheet = workbook.worksheets[0] 
     @start_index = self.find_start(@worksheet)
   end
@@ -29,16 +30,23 @@ class CommissionParser
   end
 
   def display_policies policies
+    results = ""
     policies.each do |policy|
       policy.each do |key, value|
-        if key == :date
-          puts "#{key}: #{value.strftime("%m/%d/%Y")}"
+        if value.class.name == "DateTime"
+          str = "#{key}: #{value.strftime("%m/%d/%Y")}"
         else
-          puts "#{key}: #{value}"
+          str ="#{key}: #{value}"
         end
+        puts str
+        results += str
       end
       puts ""
+      results += "\n"
     end
+    out_file = File.new(File.expand_path("~/Desktop/ToBeDone-Commission.txt"), "w")
+    out_file.puts results
+    out_file.close
   end
 
   def print_pre pre
@@ -123,7 +131,16 @@ class CommissionParser
         not_found.push(policy)
       end
     end
-    display_policies not_found
+    # display_policies not_found
+    done = false
+
+    until done == true do
+      puts "Finished? [Y/n]"
+      answer = gets.chomp
+      if not answer.include? 'n'
+        done = true
+      end
+    end
   end
 end
 
@@ -236,15 +253,24 @@ class WebDriver
       end
     end
     if date_title and policy_num_title
-      puts "Mathces"
       return true
     end
-    puts "No match"
     return false
   end
 
   def format_date date
-    return date.strftime("%m/%d/%Y")
+    if date.class.name == "DateTime" || date.class.name == "Date" 
+      return date.strftime("%m/%d/%Y")
+    else 
+      if date.index("/") == 1
+        date = '0' + date
+      end
+
+      if date.index('/', 3) == 4
+        date = date.insert(3, '0')
+      end
+      return date
+    end
   end
 
   def find_policy_button elements
