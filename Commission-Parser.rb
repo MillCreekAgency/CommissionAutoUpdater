@@ -4,7 +4,7 @@ require 'rubyXL'
 require 'selenium-webdriver'
 
 
-USER_EMAIL='dean@millcreekagency.com'
+USER_EMAIL='tory@millcreekagency.com'
 
 class CommissionParser
 
@@ -28,10 +28,14 @@ class CommissionParser
     return -1
   end
 
-  def display_policies
-    @policies.each do |policy|
+  def display_policies policies
+    policies.each do |policy|
       policy.each do |key, value|
-        puts "#{key}: #{value}"
+        if key == :date
+          puts "#{key}: #{value.strftime("%m/%d/%Y")}"
+        else
+          puts "#{key}: #{value}"
+        end
       end
       puts ""
     end
@@ -113,9 +117,13 @@ class CommissionParser
   def update
     web_driver = WebDriver.new
 
+    not_found = []
     @policies.each do |policy|
-      web_driver.update_policy policy[:policy_num], policy[:name], policy[:commission], policy[:date], policy[:company]
+      if not web_driver.update_policy policy
+        not_found.push(policy)
+      end
     end
+    display_policies not_found
   end
 end
 
@@ -172,16 +180,14 @@ class WebDriver
     end
   end
 
-  def update_policy policy_num, name, commission, date, company 
+  def update_policy policy 
     sleep(1)
     search_policy = @driver.find_element(name: "sch-policyNumber")
-    search_name = @driver.find_element(name: "sch-insured")
     search_policy.clear
-    search_name.clear
-    if policy_num != nil
-      search_policy.send_keys policy_num
+    if policy[:policy_num] != nil
+      search_policy.send_keys policy[:policy_num].tr(' ', '')
     else
-      search_name.send_keys name
+      return false 
     end
 
     button = find_policy_button @driver.find_elements(class: "ResetTutorialsButton")
@@ -196,34 +202,45 @@ class WebDriver
           close_button.click
         end
       end
-      return
+      return false
     end
+
 
     # Get search results
-    search_results = @driver.find_elements(tag_name: "tbody")
+    search_results = @driver.find_elements(class: "row-one")
     search_results.each do |result|
-      date_title = false
-      policy_num_title = false
-      result.find_elements(tag_name: "td").each do |cell|
-        title = cell.property("title")
-        if policy_num != nil
-          if (title.include? policy_num)
-            policy_num_title = true
-          end
-        else 
-          if (title.include? name.split(" ")[0])
-            polciy_num_title = true
-          end
-        end
-        if (title.include? format_date(date))
-          date_title = true
-        end
-      end
-      if date_title and policy_num_title
-        result.click
+      if match_result result, policy[:policy_num], policy[:date]
+        addCommission result, policy[:commission]
+        break
       end
     end
+  end
 
+  def addCommission result, amount
+    result.find_element(class: "balance-amt").click
+    result.find_element(class: "currencyVal").send_keys (amount.to_s)
+  end
+
+
+
+  def match_result result, policy_num, date
+    date_title = false
+    policy_num_title = false
+    result.find_elements(tag_name: "td").each do |cell|
+      title = cell.property("title")
+      if (title.include? policy_num)
+        policy_num_title = true
+      end
+      if (title.include? format_date(date))
+        date_title = true
+      end
+    end
+    if date_title and policy_num_title
+      puts "Mathces"
+      return true
+    end
+    puts "No match"
+    return false
   end
 
   def format_date date
