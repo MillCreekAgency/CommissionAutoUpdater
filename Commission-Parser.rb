@@ -10,7 +10,7 @@ class CommissionParser
 
   def initialize
     puts "Enter filepath: "
-    filepath = gets.chomp.trim
+    filepath = gets.chomp.strip
     workbook = RubyXL::Parser.parse(filepath)
     @worksheet = workbook.worksheets[0] 
     @start_index = self.find_start(@worksheet)
@@ -150,6 +150,7 @@ class WebDriver
   def initialize
     @driver = Selenium::WebDriver.for :chrome
     @driver.navigate.to 'https://app.qqcatalyst.com/Contacts/MGA/Details/7152'
+    
     print 'Please enter password:'
 	pass = STDIN.noecho(&:gets).chomp
     puts ""
@@ -195,6 +196,11 @@ class WebDriver
     until @driver.current_url.include? 'ReconcileWorkflow'
       sleep(1)
     end
+
+    (1..9).each do |num|
+      waiting = @driver.find_element(tag_name: "html")
+      waiting.send_keys :command, :subtract
+    end
   end
 
   def update_policy policy 
@@ -234,8 +240,10 @@ class WebDriver
   end
 
   def addCommission result, amount
+    result.send_keys(:end)
     result.find_element(class: "balance-amt").click
     result.find_element(class: "currencyVal").send_keys (amount.to_s)
+    result.send_keys(:home)
   end
 
 
