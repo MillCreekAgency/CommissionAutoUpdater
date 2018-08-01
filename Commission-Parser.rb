@@ -196,16 +196,12 @@ class WebDriver
     until @driver.current_url.include? 'ReconcileWorkflow'
       sleep(1)
     end
-
-    (1..9).each do |num|
-      waiting = @driver.find_element(tag_name: "html")
-      waiting.send_keys :command, :subtract
-    end
   end
 
   def update_policy policy 
     sleep(1)
     search_policy = @driver.find_element(name: "sch-policyNumber")
+    scroll_to search_policy
     search_policy.clear
     if policy[:policy_num] != nil
       search_policy.send_keys policy[:policy_num].tr(' ', '')
@@ -240,10 +236,13 @@ class WebDriver
   end
 
   def addCommission result, amount
-    result.send_keys(:end)
-    result.find_element(class: "balance-amt").click
-    result.find_element(class: "currencyVal").send_keys (amount.to_s)
-    result.send_keys(:home)
+    balance = result.find_element(class: "balance-amt")
+    scroll_to balance
+    balance.click
+    input = result.find_element(class: "currencyVal")
+    scroll_to input
+    input.clear
+    input.send_key(amount.to_s)
   end
 
 
@@ -287,6 +286,13 @@ class WebDriver
         return element
       end
     end
+  end
+
+  def scroll_to element
+    #@driver.action.move_to(element).perform
+    #@driver.execute_script("arguments[0].scrollIntoView(true);", element)
+    @driver.execute_script("window.scrollTo(arguments[0], arguments[1]);", element.location.x, element.location.y - 200)
+    sleep(1)
   end
 
   
