@@ -4,7 +4,7 @@ require 'rubyXL'
 require 'selenium-webdriver'
 
 
-USER_EMAIL='dean@millcreekagency.com'
+USER_EMAIL='tory@millcreekagency.com'
 
 class CommissionParser
 
@@ -39,7 +39,7 @@ class CommissionParser
           str ="#{key}: #{value}"
         end
         puts str
-        results += str
+        results += str + "\n"
       end
       puts ""
       results += "\n"
